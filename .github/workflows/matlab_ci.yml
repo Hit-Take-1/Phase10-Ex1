@@ -1,44 +1,42 @@
-name: MATLAB Multi-Release CI with Cross-Platform CI
+name: MATLAB Multi-Release CI
 
 on:
-push:
-pull_request:
+  push:
+  pull_request:
 
 jobs:
-test:
-# jobs の直下の項目は、スペース4つ（または2つ）で揃えます
-runs-on: ${{ matrix.os }}
+  test:
+    runs-on: ${{ matrix.os }}
 
-strategy:
-fail-fast: false
-matrix:
-os: [ubuntu-latest, windows-latest]
-release: ["R2024a", "R2024b"]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        release: ["R2024a", "R2024b"]
 
-steps:
-- name: Checkout repository
-uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-- name: Setup MATLAB
-uses: matlab-actions/setup-matlab@v2
-with:
-release: ${{ matrix.release }}
+      - name: Setup MATLAB
+        uses: matlab-actions/setup-matlab@v2
+        with:
+          release: ${{ matrix.release }}
 
-- name: Run buildfile
-# 注: MATLAB Projectの標準的なテスト実行は run-tests アクションも便利です
-run: matlab -batch "buildfile('run')"
+      - name: Run buildfile
+        run: matlab -batch "buildfile('run')"
 
-- name: Publish Test Results (JUnit)
-if: always()
-uses: mikepenz/action-junit-report@v4
-with:
-report_paths: 'build-output/junit.xml'
-check_name: "Test Report (${{ matrix.os }} / ${{ matrix.release }})"
+      - name: Publish Test Results (JUnit)
+        if: always()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: 'build-output/junit.xml'
+          check_name: "Test Report (${{ matrix.os }} / ${{ matrix.release }})"
 
-- name: Upload Build Artifacts
-if: always()
-uses: actions/upload-artifact@v4
-with:
-name: matlab-artifacts-${{ matrix.os }}-${{ matrix.release }}
-path: build-output/
-retention-days: 7
+      - name: Upload Build Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matlab-artifacts-${{ matrix.os- }}${{ matrix.release }}
+          path: build-output/
+          retention-days: 7
