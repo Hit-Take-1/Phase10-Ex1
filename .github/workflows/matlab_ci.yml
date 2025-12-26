@@ -1,0 +1,64 @@
+# ワークフローの名前（GitHubのActionsタブに表示される名前）
+name: MATLAB Multi-Release CI with Cross-Platform CI
+
+# 実行トリガー：どのイベントでこのテストを動かすか
+on: 
+    push:            # コードがPushされたとき
+    pull_request:    # プルリクエストが作成・更新されたとき
+
+# on: [push, pull_request] # 上記別の記述方法
+
+jobs:
+    test:
+    # 実行環境をマトリックス変数 (matrix.os) から動的に取得
+    runs-on: ${{ matrix.os }}
+
+    # マトリックス戦略：複数の条件を組み合わせて並列実行する
+    strategy:
+        matrix:
+            # テストしたいOSのリスト
+            os: [ubuntu-latest, windows-latest]
+            # テストしたいMATLABリリースのリスト
+            release: ["R2024a", "R2024b"]
+    
+        # fail-fastをfalseに設定：
+        # 1つの組み合わせ（例：Linux/R2024a）が失敗しても、他の組み合わせのテストを止めずに最後まで実行します。
+        fail-fast: false
+
+    steps:
+        # 手順1：GitHub上のリポジトリからコードを作業用マシンにコピー（チェックアウト）
+        - name: Checkout repository
+          uses: actions/checkout@v4
+
+        # 手順2：指定されたバージョンのMATLABをセットアップ
+        # matrix.release から順番にバージョンが渡されます
+        - name: Setup MATLAB
+          uses: matlab-actions/setup-matlab@v2
+          with:
+            release: ${{ matrix.release }}
+    
+        # 手順3：buildfile.m を実行
+        # -batch モードにより、GUIなしでコマンドを実行。失敗するとエラーコードを返します。
+        - name: Run buildfile
+          run: matlab -batch "buildfile('run')"
+    
+        # 手順4：【可視化】テスト結果をブラウザ上の専用タブに表示
+        # if: always() により、テストが失敗した場合でも必ずレポートを解析して表示します。
+        - name: Publish Test Results (JUnit)
+          if: always()
+          uses: mikepenz/action-junit-report@v4
+          with:
+            report_paths: 'build-output/junit.xml'
+            # GitHub上で識別しやすいように、OS名とバージョン名をタイトルに付与
+            check_name: "Test Report (${{ matrix.os }} / ${{ matrix.release }})"
+
+        # 手順5：【保存】生成されたログやレポートをGitHub上に保存（Artifacts）
+        # 後からブラウザでZIPダウンロードして詳細な調査ができるようにします。
+        - name: Upload Build Artifacts
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            # 保存名が重複しないよう、OS名とリリース名を名前に含めます
+            name: matlab-artifacts-${{ matrix.os }}-${{ matrix.release }}
+            path: build-output/
+            retention-days: 7 # 保存期間は1週間
