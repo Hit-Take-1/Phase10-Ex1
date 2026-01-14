@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        release: ["R2024a", "R2024b"]
+        release: ["R2023a", "R2023b"]
 
     steps:
       - name: Checkout repository
